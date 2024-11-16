@@ -13,23 +13,24 @@ class SignLanguageRecognizer:
     def __init__(self):
         self.is_active = False
         self.current_text = ''
-        self.modo = 'reconocimiento_estatico'
+        self.modo = 'reconocimiento_estatico'  # Modo inicial de reconocimiento estático
         self.modelo = None
         self.le = None 
         self.scaler = None
         self.detector = Detector_Manos(max_num_hands=2, detection_confidence=0.5)
         self.saver = FrameSaver()
-        self.capturar_secuencias = False
         self.secuencias_frames = []
         self.secuencias = 30  # Número de frames en cada secuencia
         self.current_label = None
-        self.frame_count = 1
         self.last_class = None
         self.cap = None
         self.thread = None
         self.stop_event = threading.Event()
         self.expresionestxt = os.path.join(os.path.dirname(__file__), 'expresiones_dinamicas.txt')  
         self.recognized_signs = []  # Lista para almacenar las señas reconocidas
+        self.capturing_sequence = False  # Bandera para capturar secuencia dinámica
+        self.sequence_count = 1  # Contador para secuencias dinámicas
+        self.frame_count = 1  # Contador para imágenes estáticas
         self.load_models(self.modo)
         
     def load_models(self, modo):
@@ -50,14 +51,16 @@ class SignLanguageRecognizer:
             self.le = None
             self.scaler = None
             return
-    
+
+        # Cargar el modelo
         if os.path.exists(model_path):
             self.modelo = load_model(model_path)
             print(f"Modelo cargado desde {model_path}")
         else:
             print(f"Modelo no encontrado en {model_path}")
             self.modelo = None
-    
+
+        # Cargar el LabelEncoder
         if os.path.exists(encoder_path):
             with open(encoder_path, 'rb') as file:
                 self.le = pickle.load(file)
@@ -65,7 +68,8 @@ class SignLanguageRecognizer:
         else:
             print(f"LabelEncoder no encontrado en {encoder_path}")
             self.le = None
-    
+
+        # Cargar el Scaler
         if os.path.exists(scaler_path):
             with open(scaler_path, 'rb') as file:
                 self.scaler = pickle.load(file)
@@ -92,7 +96,12 @@ class SignLanguageRecognizer:
                     else:
                         self.reconocer_manos(frame, all_hands)
                 elif self.modo.startswith('captura'):
-                    self.capturar_datos(frame, all_hands)
+                    if self.capturing_sequence:
+                        self.capturar_secuencia_dinamica(frame, all_hands)
+                    else:
+                        # Modo captura estático: mostrar etiqueta actual
+                        cv2.putText(frame, f'Modo captura: {self.current_label}', (10, 30),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2, cv2.LINE_AA)
             else:
                 self.last_class = None
 
@@ -114,6 +123,9 @@ class SignLanguageRecognizer:
                 self.cambiar_modo()
             elif key == ord('c'):
                 self.activar_captura()
+            elif key == ord('g'):
+                if self.modo.startswith('captura'):
+                    self.guardar_datos(frame, all_hands)
 
         self.clean_up()
 
@@ -172,9 +184,52 @@ class SignLanguageRecognizer:
             return class_name
         return None
 
-    def capturar_datos(self, frame, all_hands):
-        # La implementación permanece igual
-        pass  # Asumiendo que ya está implementado
+    def guardar_datos(self, frame, all_hands):
+        if self.current_label is None:
+            print("No hay etiqueta establecida. Presione 'c' para iniciar la captura y establecer una etiqueta.")
+            return
+        if self.modo == 'captura_estatica':
+            # Guardar imagen estática
+            self.saver.save_image(frame, self.current_label, self.frame_count)
+            print(f"Imagen guardada como {self.current_label}_{self.frame_count}.jpg")
+            self.frame_count += 1
+        elif self.modo == 'captura_dinamica':
+            if not self.capturing_sequence:
+                # Iniciar captura automática de secuencia
+                self.capturing_sequence = True
+                self.secuencias_frames = []
+                print(f"Iniciando captura de secuencia para {self.current_label}")
+            # La captura de secuencia se maneja en el método capturar_secuencia_dinamica
+        else:
+            print("No está en modo de captura. Presione 'c' para activar el modo de captura.")
+
+    def capturar_secuencia_dinamica(self, frame, all_hands):
+        if not self.capturing_sequence:
+            return
+
+        # Capturar landmarks de las manos
+        hand1_landmarks = np.zeros(63)
+        hand2_landmarks = np.zeros(63)
+
+        if len(all_hands) >= 1:
+            hand1_landmarks = np.array(all_hands[0]).flatten()
+        if len(all_hands) >= 2:
+            hand2_landmarks = np.array(all_hands[1]).flatten()
+
+        combined_landmarks = np.concatenate([hand1_landmarks, hand2_landmarks])
+        self.secuencias_frames.append(combined_landmarks)
+
+        cv2.putText(frame, f'Capturando secuencia: {len(self.secuencias_frames)}/{self.secuencias}',
+                    (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2, cv2.LINE_AA)
+
+        if len(self.secuencias_frames) == self.secuencias:
+            # Guardar secuencia cuando se completa
+            sequence = np.array(self.secuencias_frames)
+            self.saver.save_sequence(sequence, self.current_label, self.sequence_count)
+            print(f"Secuencia guardada como {self.current_label}_{self.sequence_count}")
+            self.secuencias_frames = []
+            self.sequence_count += 1
+            self.capturing_sequence = False  # Detener la captura automática
 
     def cambiar_modo(self):
         if self.modo == 'reconocimiento_estatico':
@@ -189,14 +244,33 @@ class SignLanguageRecognizer:
         self.current_text = ''
         self.last_class = None
         self.secuencias_frames = []
+        self.capturing_sequence = False  # Asegurarse de detener cualquier captura en curso
         print(f"Cambiado a modo: {self.modo}")
 
     def activar_captura(self):
-        if self.modo == 'reconocimiento_estatico':
-            self.modo = 'captura_estatica'
-        elif self.modo == 'reconocimiento_dinamico':
-            self.modo = 'captura_dinamica'
-        print(f"Modo de captura activado: {self.modo}")
+        if self.modo == 'reconocimiento_estatico' or self.modo == 'reconocimiento_dinamico':
+            if self.modo == 'reconocimiento_estatico':
+                self.modo = 'captura_estatica'
+            elif self.modo == 'reconocimiento_dinamico':
+                self.modo = 'captura_dinamica'
+            # Solicitar etiqueta una vez por letra
+            if self.current_label is None:
+                self.current_label = input("Ingrese la etiqueta para la captura: ").strip()
+                if self.modo == 'captura_estatica':
+                    self.frame_count = 1
+                elif self.modo == 'captura_dinamica':
+                    self.sequence_count = 1
+            print(f"Modo de captura activado: {self.modo} para la etiqueta: {self.current_label}")
+        elif self.modo.startswith('captura'):
+            # Si ya estamos en modo captura, volver al modo de reconocimiento
+            if self.modo == 'captura_estatica':
+                self.modo = 'reconocimiento_estatico'
+            elif self.modo == 'captura_dinamica':
+                self.modo = 'reconocimiento_dinamico'
+            self.current_label = None
+            self.secuencias_frames = []
+            self.capturing_sequence = False  # Asegurarse de detener cualquier captura en curso
+            print(f"Captura detenida. Modo actual: {self.modo}")
 
     def start(self):
         if not self.is_active:
@@ -236,7 +310,6 @@ class SignLanguageRecognizer:
         }
 
     def save_recognized_signs(self, filename):
-            
         """Guarda las señas reconocidas en un archivo separado por espacios."""
         try:
             with open(filename, 'w', encoding='utf-8') as f:
