@@ -26,7 +26,6 @@ class SignLanguageRecognizer:
         self.cap = None
         self.thread = None
         self.stop_event = threading.Event()
-        self.expresionestxt = os.path.join(os.path.dirname(__file__), 'expresiones_dinamicas.txt')  
         self.recognized_signs = []  # Lista para almacenar las señas reconocidas
         self.capturing_sequence = False  # Bandera para capturar secuencia dinámica
         self.sequence_count = 1  # Contador para secuencias dinámicas
@@ -144,7 +143,7 @@ class SignLanguageRecognizer:
         class_name = self.le.inverse_transform([class_id])[0]
 
         if class_name != self.last_class:
-            self.current_text = class_name
+            self.current_text += ' ' + class_name if self.current_text else class_name
             self.last_class = class_name
             self.recognized_signs.append(class_name)  # Agregar a la lista de señas reconocidas
 
@@ -176,7 +175,7 @@ class SignLanguageRecognizer:
             class_name = self.le.inverse_transform([class_id])[0]
 
             if class_name != self.last_class:
-                self.current_text = class_name
+                self.current_text += ' ' + class_name if self.current_text else class_name
                 self.last_class = class_name
                 self.recognized_signs.append(class_name)  # Agregar a la lista de señas reconocidas
 
@@ -275,6 +274,10 @@ class SignLanguageRecognizer:
     def start(self):
         if not self.is_active:
             self.is_active = True
+            # Reiniciar información acumulada al iniciar
+            self.current_text = ''
+            self.recognized_signs = []
+            self.last_class = None
             self.cap = cv2.VideoCapture(0)
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -302,21 +305,22 @@ class SignLanguageRecognizer:
         print("Modelos precargados.")
 
     def get_current_data(self):
-        return {
-            'is_active': self.is_active,
-            'current_text': self.current_text.strip(),
-            'last_class': self.last_class,
-            'recognized_signs': self.recognized_signs  # Devolver la lista de señas reconocidas
-        }
-
-    def save_recognized_signs(self, filename):
-        """Guarda las señas reconocidas en un archivo separado por espacios."""
+        # Guardar las señas reconocidas en 'senas_reconocidas.txt' en la carpeta lessa_lib
+        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        filename = os.path.join(base_path, 'senas_reconocidas.txt')
         try:
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write(' '.join(self.recognized_signs))
             print(f"Señas reconocidas guardadas en el archivo: {filename}")
         except Exception as e:
             print(f"Error al guardar las señas reconocidas: {e}")
+        return {
+            'is_active': self.is_active,
+            'current_text': self.current_text.strip(),
+            'last_class': self.last_class,
+            'recognized_signs': self.recognized_signs
+        }
+
 
 # Instancia global para usar en funciones externas
 recognizer = SignLanguageRecognizer()
@@ -333,6 +337,3 @@ def preload():
 
 def get_current_data():
     return recognizer.get_current_data()
-
-def save_recognized_signs(filename):
-    recognizer.save_recognized_signs(filename)
