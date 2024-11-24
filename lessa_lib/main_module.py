@@ -240,8 +240,6 @@ class SignLanguageRecognizer:
         elif self.modo == 'captura_dinamica':
             self.modo = 'reconocimiento_dinamico'
         self.load_models(self.modo)
-        self.current_text = ''
-        self.last_class = None
         self.secuencias_frames = []
         self.capturing_sequence = False  # Asegurarse de detener cualquier captura en curso
         print(f"Cambiado a modo: {self.modo}")
