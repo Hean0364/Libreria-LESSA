@@ -1,5 +1,3 @@
-# lessa_lib/main_module.py
-
 import cv2
 import numpy as np
 import pickle
@@ -13,7 +11,7 @@ class SignLanguageRecognizer:
     def __init__(self):
         self.is_active = False
         self.current_text = ''
-        self.modo = 'reconocimiento_estatico'  # Modo inicial de reconocimiento estático
+        self.modo = 'reconocimiento_estatico' 
         self.modelo = None
         self.le = None 
         self.scaler = None
@@ -288,7 +286,11 @@ class SignLanguageRecognizer:
         if self.is_active:
             self.is_active = False
             self.stop_event.set()
-            self.thread.join()
+            
+            # Solo unir el hilo si no se está llamando desde él mismo
+            if threading.current_thread() != self.thread:
+                self.thread.join()
+            
             self.clean_up()
             print("Reconocimiento detenido.")
 
@@ -335,3 +337,12 @@ def preload():
 
 def get_current_data():
     return recognizer.get_current_data()
+
+def cambiar_modo():
+    recognizer.cambiar_modo()
+
+def activar_captura():
+    recognizer.activar_captura()
+
+def is_active():
+    return recognizer.is_active
