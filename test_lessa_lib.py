@@ -1,4 +1,3 @@
-# test_lessa_lib.py
 
 import time
 import os

@@ -5,6 +5,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
+
 import pickle
 import os
 
@@ -45,7 +46,7 @@ def train_static_model():
     loss, accuracy = model.evaluate(X_test, y_test)
     print(f'Precisión en el conjunto de prueba: {accuracy*100:.2f}%')
 
-    model.save(os.path.join(data_path, 'modelo_senas_estaticas.h5'))
+    model.save(os.path.join(data_path, 'modelo_senas_estaticas.keras'))
     print("Modelo estático entrenado y guardado exitosamente.")
 
 def train_dynamic_model():
@@ -85,5 +86,5 @@ def train_dynamic_model():
     loss, accuracy = model.evaluate(X_test, y_test)
     print(f'Precisión en el conjunto de prueba: {accuracy*100:.2f}%')
 
-    model.save(os.path.join(data_path, 'modelo_senas_dinamicas.h5'))
+    model.save(os.path.join(data_path, 'modelo_senas_dinamicas.keras'))
     print("Modelo dinámico entrenado y guardado exitosamente.")

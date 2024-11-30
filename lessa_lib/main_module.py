@@ -36,11 +36,11 @@ class SignLanguageRecognizer:
         encoder_path = ''
         scaler_path = ''
         if modo == 'reconocimiento_estatico':
-            model_path = os.path.join(base_path, 'models', 'modelo_senas_estaticas.h5')
+            model_path = os.path.join(base_path, 'models', 'modelo_senas_estaticas.keras')
             encoder_path = os.path.join(base_path, 'models', 'label_encoder_estaticas.pkl')
             scaler_path = os.path.join(base_path, 'models', 'scaler_estaticas.pkl')
         elif modo == 'reconocimiento_dinamico':
-            model_path = os.path.join(base_path, 'models', 'modelo_senas_dinamicas.h5')
+            model_path = os.path.join(base_path, 'models', 'modelo_senas_dinamicas.keras')
             encoder_path = os.path.join(base_path, 'models', 'label_encoder_dinamicas.pkl')
             scaler_path = os.path.join(base_path, 'models', 'scaler_dinamicas.pkl')
         else:
