@@ -18,19 +18,21 @@ class SignLanguageRecognizer:
         self.detector = Detector_Manos(max_num_hands=2, detection_confidence=0.5)
         self.saver = FrameSaver()
         self.secuencias_frames = []
-        self.secuencias = 30  # Número de frames en cada secuencia
+        self.secuencias = 30  
         self.current_label = None
         self.last_class = None
         self.cap = None
         self.thread = None
         self.stop_event = threading.Event()
-        self.recognized_signs = []  # Lista para almacenar las señas reconocidas
-        self.capturing_sequence = False  # Bandera para capturar secuencia dinámica
-        self.sequence_count = 1  # Contador para secuencias dinámicas
-        self.frame_count = 1  # Contador para imágenes estáticas
+        self.recognized_signs = [] 
+        self.capturing_sequence = False 
+        self.sequence_count = 1  
+        self.frame_count = 1  
         self.load_models(self.modo)
         
+    #Usamos la libreria os, para el sistema de carpetas y validacion de estas
     def load_models(self, modo):
+
         base_path = os.path.dirname(__file__)
         model_path = ''
         encoder_path = ''
@@ -49,7 +51,7 @@ class SignLanguageRecognizer:
             self.scaler = None
             return
 
-        # Cargar el modelo
+        # Validacion de las rutas y cargar con los modelos con la libreria pickle, ademas se deserializa los datos
         if os.path.exists(model_path):
             self.modelo = load_model(model_path)
             print(f"Modelo cargado desde {model_path}")
@@ -57,7 +59,7 @@ class SignLanguageRecognizer:
             print(f"Modelo no encontrado en {model_path}")
             self.modelo = None
 
-        # Cargar el LabelEncoder
+        
         if os.path.exists(encoder_path):
             with open(encoder_path, 'rb') as file:
                 self.le = pickle.load(file)
@@ -66,7 +68,7 @@ class SignLanguageRecognizer:
             print(f"LabelEncoder no encontrado en {encoder_path}")
             self.le = None
 
-        # Cargar el Scaler
+        
         if os.path.exists(scaler_path):
             with open(scaler_path, 'rb') as file:
                 self.scaler = pickle.load(file)
@@ -74,6 +76,7 @@ class SignLanguageRecognizer:
         else:
             print(f"Scaler no encontrado en {scaler_path}")
             self.scaler = None
+
 
     def process_frame(self):
         while not self.stop_event.is_set():
@@ -192,11 +195,11 @@ class SignLanguageRecognizer:
             self.frame_count += 1
         elif self.modo == 'captura_dinamica':
             if not self.capturing_sequence:
-                # Iniciar captura automática de secuencia
+                
                 self.capturing_sequence = True
                 self.secuencias_frames = []
                 print(f"Iniciando captura de secuencia para {self.current_label}")
-            # La captura de secuencia se maneja en el método capturar_secuencia_dinamica
+            
         else:
             print("No está en modo de captura. Presione 'c' para activar el modo de captura.")
 

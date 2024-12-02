@@ -2,8 +2,7 @@ from lessa_lib.preprocessing import preprocess_static_data, preprocess_dynamic_d
 
 def main():
     
-    print("Preprocesando datos estáticos:")
-    preprocess_static_data()
+    
 
     print("Preprocesando datos dinámicos:")
     preprocess_dynamic_data()

@@ -6,7 +6,6 @@ from lessa_lib.main_module import start, force_stop, get_current_data
 
 def main():
     try:
-        # Iniciar el reconocimiento
         start()
         print("Reconocimiento iniciado. Realiza algunas señas frente a la cámara.")
         print("Escribe 'q' y presiona Enter en la consola para detener el reconocimiento.")
